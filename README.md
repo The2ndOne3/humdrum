@@ -10,11 +10,11 @@ Run `humdrum command -o output-file` to start. Humdrum captures `stdout`, compar
 Humdrum is built on top of remy/nodemon, and will accept any flag that Nodemon accepts. For example, to watch `.coffee` files as well as `.js` files, you can run `humdrum node script.js -e js,coffee,litcoffee`. Humdrum's file watching behaviour is identical to that of Nodemon's.
 
 ## Known Issues
-Running humdrum with invalid commands causes a `spawn ENOENT`. A `SIGINT` will then cause a further error when killing the child process -- input to that terminal will produce a `read EIO` error.
+1. Running humdrum with invalid commands causes a `spawn ENOENT`. A `SIGINT` will then cause a further error when killing the child process and input to that terminal will produce a `read EIO` error.
 
 ## Dependencies
-* joyent/node
-* remy/nodemon
-* visionmedia/commander.js
-* trentm/node-ansidiff
-* aadsm/jschardet
+* [Node.js](joyent/node)
+* [Nodemon](remy/nodemon)
+* [Commander.js](visionmedia/commander.js)
+* [ANSIDiff](trentm/node-ansidiff)
+* [JSCharDet](aadsm/jschardet)
