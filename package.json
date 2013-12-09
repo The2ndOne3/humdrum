@@ -7,13 +7,15 @@
     "email": "contact@lehaozhang.com",
     "url": "http://lehaozhang.com"
   },
-  "preferGlobal": true,
-  "repository": "",
-  "private": false,
-  "main": "index.js",
-  "scripts": {
-    "start": "node salviati"
+  "bin": {
+    "humdrum": "./humdrum.js"
   },
+  "preferGlobal": true,
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "main": "./humdrum",
   "dependencies": {
     "commander": "*",
     "nodemon": "*",

@@ -13,46 +13,55 @@ var program = require('commander')
   .option('--nodemon-help', 'show nodemon help')
   .option('--nodemon-version', 'show nodemon version');
 
-if(program.nodemonHelp){
-  return exec('node node_modules/nodemon/ --help', function(err, stdout){
+// Access nodemon CLI texts.
+var get_output_of_command = function(command, callback){
+  exec(command, function(err, stdout){
     if(err){
       console.error(err);
     }
-    return process.stdout.write(stdout.toString());
+    callback(stdout.toString());
+  });
+};
+
+if(program.nodemonHelp){
+  get_output_of_command('node node_modules/nodemon/ --help', function(output){
+    process.stdout.write(output);
+    process.exit(0);
   });
 }
-
 if(program.nodemonVersion){
-  return exec('node node_modules/nodemon/ --version', function(err, stdout){
-    if(err){
-      console.error(err);
-    }
-    return process.stdout.write(stdout.toString());
+  get_output_of_command('node node_modules/nodemon/ --version', function(output){
+    process.stdout.write(output);
+    process.exit(0);
   });
 }
 
 // Do nothing with unknown options -- capture for nodemon.
 program.unknownOption = function(){};
 
-// See hack @ https://github.com/nitoyon/livereloadx/commit/521581279a1f1d840685d49729d6d0cf3a64d1b
-program._name = 'salviati';
+// See bug @ https://github.com/nitoyon/livereloadx/commit/521581279a1f1d840685d49729d6d0cf3a64d1b
+// and hack @ https://github.com/visionmedia/commander.js/pull/121
+// Damn, this issue is way old. How is this bug not fixed yet?
+program._name = 'humdrum';
 var parsed = program.parseOptions(program.normalize(process.argv.slice(2)));
 program.args = parsed.args;
 if (parsed.unknown.length > 0) {
   program.parseArgs([], parsed.unknown);
 }
-var monitor_flags = parsed.unknown;
+var monitor_flags = parsed.unknown; // We don't want to die on unknown flags -- those may be intended for nodemon.
 
+// Force a `command` argument.
 if(program.args.length < 1){
   var missing_args = ['<command>'].slice(program.args.length);
   return console.error(
     '\n' +
-    'error: ' + missing_args.join(', ') +
+    '  error: ' + missing_args.join(', ') +
     ' argument' + (missing_args.length > 1 ? 's' : '') + ' missing' +
     '\n'
   );
 }
 
+// Force an output file option.
 if(!program.output){
   return console.error(
     '\n' +
@@ -72,36 +81,65 @@ var monitor = spawn('/usr/bin/env',
 });
 
 monitor.on('error', function(err){
-  console.error('Error:', err);
-  process.exit(1);
+  if(err.code == 'ENOENT'){
+    console.error(
+      '\n' +
+      '  error: command does not exist.' +
+      '\n'
+    );
+  }
+  else{
+    console.error();
+    console.error('  fatal error occurred while executing command.');
+    console.error(err);
+    console.error();
+  }
+  process.exit(100);
 });
 monitor.on('exit', function(code){
-  console.log('Exited with code', code);
-  process.exit(0);
+  console.error('e with code', code);
 });
 
 process.on('exit', function(){
   monitor.kill();
 });
 
-// Diffing setup.
+// Testing setup.
 var diff = require('diff')
   , chardet = require('jschardet')
   , fs = require('fs')
   , path = require('path');
 
+// Get the output file.
 try{
   var expected = fs.readFileSync(path.join(__dirname, program.output));
   expected = expected.toString(chardet.detect(expected).encoding);
 }
 catch(err){
   if(err.code == 'ENOENT'){
-    console.error('Output file does not exist.');
+    console.error(
+      '\n' +
+      '  error: expected output file does not exist.' +
+      '\n'
+    );
   }
-  console.error(err);
-  process.exit(1);
+  else if(err.code == 'EACCES'){
+    console.error(
+      '\n' +
+      '  error: you do not have permission to read the expected output file.' +
+      '\n'
+    );
+  }
+  else{
+    console.error();
+    console.error('  fatal error occurred while opening expected output file.');
+    console.error(err);
+    console.error();
+  }
+  process.exit(200);
 }
 
+// Validate output. If output is not valid, indicate which parts are not.
 var check_output = function(output, expected){
   var difference = diff.diffLines(expected.trim(), output.trim());
   var correctness = difference.filter(function(element){
@@ -116,6 +154,8 @@ var check_output = function(output, expected){
   };
 };
 
+// Hook into stdout, compiling output until we have the full execution result.
+// Then check the output against what we expect.
 var current_output = '';
 monitor.stdout.on('readable', function(){
   var chunk = monitor.stdout.read().toString();
