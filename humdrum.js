@@ -143,12 +143,11 @@ catch(err){
 // Validate output. If output is not valid, indicate which parts are not.
 var check_output = function(output, expected){
   var difference = diff.chars(expected.trim(), output.trim());
+  var correctness = difference.indexOf("\x1B") == -1;
   // var correctness = difference.filter(function(element){
   //   return 'added' in element || 'removed' in element;
   // }).length === 0;
-  // var patch = diff.createPatch('output', expected + '\n', output, 'expected', 'actual');
-
-  var correctness = difference.indexOf("\x1B") == -1;
+  // var difference = diff.createPatch('output', expected + '\n', output, 'expected', 'actual');
 
   return {
     correct: correctness,
