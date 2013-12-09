@@ -9,7 +9,6 @@ var program = require('commander')
   .version(require('./package').version)
   .usage('<command> [options] [nodemon-options]')
   .description('Continuously run a script against an expected output file.')
-  .option('-i, --input <file>', 'sample input file')
   .option('-o, --output <file>', 'sample output file')
   .option('--nodemon-help', 'show nodemon help')
   .option('--nodemon-version', 'show nodemon version');
@@ -58,16 +57,14 @@ console.log(
   ['node', 'node_modules/nodemon']
     .concat(nodemon_flags)
     .concat(['--exec'])
-    .concat(program.args)
-    .concat([program.input]));
+    .concat(program.args));
 
 // Monitor setup.
 var nodemon = spawn('/usr/bin/env',
   ['node', 'node_modules/nodemon']
     .concat(nodemon_flags)
     .concat(['--exec'])
-    .concat(program.args)
-    .concat([program.input]),
+    .concat(program.args),
   {
     stdio: 'inherit'
 });
