@@ -101,11 +101,12 @@ monitor.on('exit', function(code){
 });
 
 process.on('exit', function(){
+  monitor.kill('SIGHUP');
   monitor.kill('SIGKILL');
 });
 
 // Testing setup.
-var diff = require('diff')
+var diff = require('ansidiff')
   , chardet = require('jschardet')
   , fs = require('fs')
   , path = require('path');
@@ -141,16 +142,17 @@ catch(err){
 
 // Validate output. If output is not valid, indicate which parts are not.
 var check_output = function(output, expected){
-  var difference = diff.diffLines(expected.trim(), output.trim());
-  var correctness = difference.filter(function(element){
-    return 'added' in element || 'removed' in element;
-  }).length === 0;
+  var difference = diff.chars(expected.trim(), output.trim());
+  // var correctness = difference.filter(function(element){
+  //   return 'added' in element || 'removed' in element;
+  // }).length === 0;
+  // var patch = diff.createPatch('output', expected + '\n', output, 'expected', 'actual');
 
-  var patch = diff.createPatch('output', expected, output, 'expected', 'actual');
+  var correctness = difference.indexOf("\x1B") == -1;
 
   return {
     correct: correctness,
-    diff: patch
+    diff: difference
   };
 };
 
@@ -166,10 +168,10 @@ monitor.stdout.on('readable', function(){
     console.log();
     var check = check_output(current_output, expected);
     if(check.correct){
-      console.log('Test passed!');
+      console.log('\x1B[32mTest passed!\x1B[0m');
     }
     else{
-      console.log('Test failed:');
+      console.log('\x1B[1;31mTest failed:\x1B[0m');
       console.log(check.diff);
     }
     console.log('Waiting for changes...');
@@ -178,6 +180,6 @@ monitor.stdout.on('readable', function(){
   else if(chunk.indexOf('app crashed') > -1){
     console.log();
     current_output = '';
-    console.log('Test failed -- build crashed.');
+    console.log('\x1B[1;31mTest failed -- build crashed.\x1B[0m');
   }
 });

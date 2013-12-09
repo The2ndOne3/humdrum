@@ -19,7 +19,7 @@
   "dependencies": {
     "commander": "*",
     "nodemon": "*",
-    "diff": "*",
+    "ansidiff": "*",
     "jschardet": "*"
   },
   "devDependencies": {
