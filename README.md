@@ -14,5 +14,7 @@ Running humdrum with invalid commands causes a `spawn ENOENT`. A `SIGINT` will t
 
 ## Dependencies
 * joyent/node
-* visionmedia/commander.js
 * remy/nodemon
+* visionmedia/commander.js
+* trentm/node-ansidiff
+* aadsm/jschardet
