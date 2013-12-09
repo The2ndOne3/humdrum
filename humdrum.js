@@ -101,7 +101,7 @@ monitor.on('exit', function(code){
 });
 
 process.on('exit', function(){
-  monitor.kill();
+  monitor.kill('SIGKILL');
 });
 
 // Testing setup.
