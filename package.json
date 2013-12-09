@@ -1,0 +1,21 @@
+{
+  "name": "salviati",
+  "version": "0.0.1",
+  "description": "A continuous testing platform against plaintext output.",
+  "author": {
+    "name": "Lehao Zhang",
+    "email": "contact@lehaozhang.com",
+    "url": "http://lehaozhang.com"
+  },
+  "repository": "",
+  "private": false,
+  "main": "index.js",
+  "scripts": {
+    "start": "node salviati"
+  },
+  "dependencies": {
+    "optimist": "*",
+    "nodemon": "*",
+    "diff": "*"
+  }
+}

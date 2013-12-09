@@ -1,0 +1,110 @@
+#!/usr/bin/env node
+
+var child = require('child_process')
+  , spawn = child.spawn
+  , exec = child.exec;
+
+// CLI setup.
+var optimist = require('optimist')
+  .usage('Usage: salviati command -i [input-file] -o [output-file] [nodemon-options] [options]', {
+    input: {
+      alias: 'i',
+      description: 'sample input file',
+      demand: true
+    },
+    output: {
+      alias: 'o',
+      description: 'sample output file',
+      demand: true
+    },
+    'nodemon-help': {
+      alias: 'nh',
+      boolean: true,
+      description: 'show nodemon help'
+    },
+    'nodemon-version': {
+      alias: 'nv',
+      boolean: true,
+      description: 'show nodemon version'
+    },
+    help: {
+      alias: 'h',
+      boolean: true,
+      description: 'show help text'
+    },
+    version: {
+      alias: 'v',
+      boolean: true,
+      description: 'show current version'
+    },
+  });
+
+if(optimist.argv.help){
+  return optimist.showHelp();
+}
+
+if(optimist.argv['nodemon-help']){
+  return exec('node node_modules/nodemon/ --help', function(err, stdout){
+    if(err){
+      console.error(err);
+    }
+    return console.log(stdout.toString());
+  });
+}
+
+if(optimist.argv.version){
+  return console.log(require('./package').version);
+}
+
+if(optimist.argv['nodemon-version']){
+  return exec('node node_modules/nodemon/ --version', function(err, stdout){
+    if(err){
+      console.error(err);
+    }
+    return console.log(stdout.toString());
+  });
+}
+
+if(optimist.argv._.length < 1){
+  optimist.showHelp();
+  var main_args = ['command'];
+  return console.log('Missing arguments: ' + main_args.slice(optimist.argv._.length).join(', '));
+}
+
+// Monitor setup.
+var nodemon_flags = []
+  , nodemon_flags_hash = optimist.argv
+  , extraneous_keys = [
+    'input', 'i',
+    'output', 'o',
+    'help', 'h',
+    'nh', 'nodemon-help',
+    'version', 'v',
+    '$0', '_'];
+
+for(var key in nodemon_flags_hash){
+  if(extraneous_keys.indexOf(key) > -1){
+    delete nodemon_flags_hash[key];
+  }
+}
+for(var key in nodemon_flags_hash){
+  nodemon_flags.push((key.length > 1? '--' : '-') + key);
+  nodemon_flags.push(nodemon_flags_hash[key]);
+}
+
+console.log('unnarg', optimist.argv._);
+
+var nodemon = spawn('/usr/bin/env',
+  ['node', 'node_modules/nodemon']
+    .concat(nodemon_flags)
+    .concat(['--exec'].concat(optimist.argv._).concat([optimist.argv.input])),
+  {
+    stdio: 'inherit'
+});
+
+nodemon.on('error', function(err){
+  console.error('Error:', err);
+});
+nodemon.on('exit', function(code){
+  console.log('Exited with code', code);
+});
