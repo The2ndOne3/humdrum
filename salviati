@@ -5,99 +5,69 @@ var child = require('child_process')
   , exec = child.exec;
 
 // CLI setup.
-var optimist = require('optimist')
-  .usage('Usage: salviati command -i [input-file] -o [output-file] [nodemon-options] [options]', {
-    input: {
-      alias: 'i',
-      description: 'sample input file',
-      demand: true
-    },
-    output: {
-      alias: 'o',
-      description: 'sample output file',
-      demand: true
-    },
-    'nodemon-help': {
-      alias: 'nh',
-      boolean: true,
-      description: 'show nodemon help'
-    },
-    'nodemon-version': {
-      alias: 'nv',
-      boolean: true,
-      description: 'show nodemon version'
-    },
-    help: {
-      alias: 'h',
-      boolean: true,
-      description: 'show help text'
-    },
-    version: {
-      alias: 'v',
-      boolean: true,
-      description: 'show current version'
-    },
-  });
+var program = require('commander')
+  .version(require('./package').version)
+  .usage('<command> [options] [nodemon-options]')
+  .description('Continuously run a script against an expected output file.')
+  .option('-i, --input <file>', 'sample input file')
+  .option('-o, --output <file>', 'sample output file')
+  .option('--nodemon-help', 'show nodemon help')
+  .option('--nodemon-version', 'show nodemon version');
 
-if(optimist.argv.help){
-  return optimist.showHelp();
-}
-
-if(optimist.argv['nodemon-help']){
+if(program.nodemonHelp){
   return exec('node node_modules/nodemon/ --help', function(err, stdout){
     if(err){
       console.error(err);
     }
-    return console.log(stdout.toString());
+    return process.stdout.write(stdout.toString());
   });
 }
 
-if(optimist.argv.version){
-  return console.log(require('./package').version);
-}
-
-if(optimist.argv['nodemon-version']){
+if(program.nodemonVersion){
   return exec('node node_modules/nodemon/ --version', function(err, stdout){
     if(err){
       console.error(err);
     }
-    return console.log(stdout.toString());
+    return process.stdout.write(stdout.toString());
   });
 }
 
-if(optimist.argv._.length < 1){
-  optimist.showHelp();
-  var main_args = ['command'];
-  return console.log('Missing arguments: ' + main_args.slice(optimist.argv._.length).join(', '));
+// Do nothing with unknown options -- capture for nodemon.
+program.unknownOption = function(){};
+
+// See hack @ https://github.com/nitoyon/livereloadx/commit/521581279a1f1d840685d49729d6d0cf3a64d1b
+program._name = 'salviati';
+var parsed = program.parseOptions(program.normalize(process.argv.slice(2)));
+program.args = parsed.args;
+if (parsed.unknown.length > 0) {
+  program.parseArgs([], parsed.unknown);
 }
+var nodemon_flags = parsed.unknown;
+
+if(program.args.length < 1){
+  var missing_args = ['<command>'].slice(program.args.length);
+  return console.error(
+    '\n' +
+    'error: ' + missing_args.join(', ') +
+    ' argument' + (missing_args.length > 1 ? 's' : '') + ' missing' +
+    '\n'
+  );
+}
+
+console.log(
+  ['node', 'node_modules/nodemon']
+    .concat(nodemon_flags)
+    .concat(['--exec'])
+    .concat(program.args)
+    .concat([program.input]));
 
 // Monitor setup.
-var nodemon_flags = []
-  , nodemon_flags_hash = optimist.argv
-  , extraneous_keys = [
-    'input', 'i',
-    'output', 'o',
-    'help', 'h',
-    'nh', 'nodemon-help',
-    'version', 'v',
-    '$0', '_'];
-
-for(var key in nodemon_flags_hash){
-  if(extraneous_keys.indexOf(key) > -1){
-    delete nodemon_flags_hash[key];
-  }
-}
-for(var key in nodemon_flags_hash){
-  nodemon_flags.push((key.length > 1? '--' : '-') + key);
-  nodemon_flags.push(nodemon_flags_hash[key]);
-}
-
-console.log('unnarg', optimist.argv._);
-
 var nodemon = spawn('/usr/bin/env',
   ['node', 'node_modules/nodemon']
     .concat(nodemon_flags)
-    .concat(['--exec'].concat(optimist.argv._).concat([optimist.argv.input])),
+    .concat(['--exec'])
+    .concat(program.args)
+    .concat([program.input]),
   {
     stdio: 'inherit'
 });
