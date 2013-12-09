@@ -1,12 +1,13 @@
 {
-  "name": "salviati",
-  "version": "0.0.1",
+  "name": "humdrum",
+  "version": "0.1.0",
   "description": "A continuous testing platform against plaintext output.",
   "author": {
     "name": "Lehao Zhang",
     "email": "contact@lehaozhang.com",
     "url": "http://lehaozhang.com"
   },
+  "preferGlobal": true,
   "repository": "",
   "private": false,
   "main": "index.js",
@@ -18,5 +19,8 @@
     "nodemon": "*",
     "diff": "*",
     "jschardet": "*"
+  },
+  "devDependencies": {
+    "mocha": "*"
   }
 }
