@@ -9,7 +9,7 @@ var program = require('commander')
   .version(require('./package').version)
   .usage('<command> [options] [nodemon-options]')
   .description('Continuously run a script against an expected output file.')
-  .option('-o, --output <file>', 'sample output file')
+  .option('-o, --output <file>', 'expected output file')
   .option('--nodemon-help', 'show nodemon help')
   .option('--nodemon-version', 'show nodemon version');
 
@@ -41,7 +41,7 @@ program.args = parsed.args;
 if (parsed.unknown.length > 0) {
   program.parseArgs([], parsed.unknown);
 }
-var nodemon_flags = parsed.unknown;
+var monitor_flags = parsed.unknown;
 
 if(program.args.length < 1){
   var missing_args = ['<command>'].slice(program.args.length);
@@ -53,25 +53,91 @@ if(program.args.length < 1){
   );
 }
 
-console.log(
-  ['node', 'node_modules/nodemon']
-    .concat(nodemon_flags)
-    .concat(['--exec'])
-    .concat(program.args));
+if(!program.output){
+  return console.error(
+    '\n' +
+    'error: -o, --output <file> mandatory argument missing' +
+    '\n'
+  );
+}
 
 // Monitor setup.
-var nodemon = spawn('/usr/bin/env',
+var monitor = spawn('/usr/bin/env',
   ['node', 'node_modules/nodemon']
-    .concat(nodemon_flags)
+    .concat(monitor_flags)
     .concat(['--exec'])
     .concat(program.args),
   {
-    stdio: 'inherit'
+    stdio: [0, 'pipe', 2]
 });
 
-nodemon.on('error', function(err){
+monitor.on('error', function(err){
   console.error('Error:', err);
+  process.exit(1);
 });
-nodemon.on('exit', function(code){
+monitor.on('exit', function(code){
   console.log('Exited with code', code);
+  process.exit(0);
+});
+
+process.on('exit', function(){
+  monitor.kill();
+});
+
+// Diffing setup.
+var diff = require('diff')
+  , chardet = require('jschardet')
+  , fs = require('fs')
+  , path = require('path');
+
+try{
+  var expected = fs.readFileSync(path.join(__dirname, program.output));
+  expected = expected.toString(chardet.detect(expected).encoding);
+}
+catch(err){
+  if(err.code == 'ENOENT'){
+    console.error('Output file does not exist.');
+  }
+  console.error(err);
+  process.exit(1);
+}
+
+var check_output = function(output, expected){
+  var difference = diff.diffLines(expected.trim(), output.trim());
+  var correctness = difference.filter(function(element){
+    return 'added' in element || 'removed' in element;
+  }).length === 0;
+
+  var patch = diff.createPatch('output', expected, output, 'expected', 'actual');
+
+  return {
+    correct: correctness,
+    diff: patch
+  };
+};
+
+var current_output = '';
+monitor.stdout.on('readable', function(){
+  var chunk = monitor.stdout.read().toString();
+  if(chunk.indexOf('[nodemon]') == -1){
+    current_output += chunk;
+  }
+  else if(chunk.indexOf('clean exit') > -1){
+    console.log();
+    var check = check_output(current_output, expected);
+    if(check.correct){
+      console.log('Test passed!');
+    }
+    else{
+      console.log('Test failed:');
+      console.log(check.diff);
+    }
+    console.log('Waiting for changes...');
+    current_output = '';
+  }
+  else if(chunk.indexOf('app crashed') > -1){
+    console.log();
+    current_output = '';
+    console.log('Test failed -- build crashed.');
+  }
 });
