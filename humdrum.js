@@ -41,14 +41,14 @@ program.unknownOption = function(){};
 
 // See bug @ https://github.com/nitoyon/livereloadx/commit/521581279a1f1d840685d49729d6d0cf3a64d1b
 // and hack @ https://github.com/visionmedia/commander.js/pull/121
-// Damn, this issue is way old. How is this bug not fixed yet?
 program._name = 'humdrum';
 var parsed = program.parseOptions(program.normalize(process.argv.slice(2)));
 program.args = parsed.args;
 if (parsed.unknown.length > 0) {
   program.parseArgs([], parsed.unknown);
 }
-var monitor_flags = parsed.unknown; // We don't want to die on unknown flags -- those may be intended for nodemon.
+// We don't want to die on unknown flags -- those may be intended for nodemon.
+var monitor_flags = parsed.unknown;
 
 // Force a `command` argument.
 if(program.args.length < 1){
@@ -144,10 +144,6 @@ catch(err){
 var check_output = function(output, expected){
   var difference = diff.chars(expected.trim(), output.trim());
   var correctness = difference.indexOf("\x1B") == -1;
-  // var correctness = difference.filter(function(element){
-  //   return 'added' in element || 'removed' in element;
-  // }).length === 0;
-  // var difference = diff.createPatch('output', expected + '\n', output, 'expected', 'actual');
 
   return {
     correct: correctness,
