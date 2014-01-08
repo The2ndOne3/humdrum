@@ -12,13 +12,6 @@ Humdrum is built on top of [Nodemon](https://github.com/remy/nodemon), and will 
 ## Known Issues
 1. Running humdrum with invalid commands causes a `spawn ENOENT`. A `SIGINT` will then cause a further error when killing the child process and input to that terminal will produce a `read EIO` error.
 
-## Dependencies
-* [Node.js](joyent/node)
-* [Nodemon](remy/nodemon)
-* [Commander.js](visionmedia/commander.js)
-* [ANSIDiff](trentm/node-ansidiff)
-* [JSCharDet](aadsm/jschardet)
-
 ## License
 &copy; 2013 Lehao Zhang
 Released under the MIT license.
